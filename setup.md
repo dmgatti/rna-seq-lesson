@@ -7,10 +7,9 @@ title:
 
 <!-- MarkdownTOC autolink="True" levels="1,2" -->
 
-- [1. Option 1 \(preferred\): using a Docker image](#1-option-1-preferred-using-a-docker-image)
-	- [1.1 Installing Docker](#11-installing-docker)
-	- [1.2 The `fastq-2022` image for bioinformatic steps \(episodes 03 and 04\)](#12-the-fastq-2022-image-for-bioinformatic-steps-episodes-03-and-04)
-	- [1.3 The `rnaseq-2022` image for the gene counts data analysis \(episodes 05, 06 and 07\)](#13-the-rnaseq-2022-image-for-the-gene-counts-data-analysis-episodes-05-06-and-07)
+- [1. Option 1 \(preferred\): using a cloud instance](#1-option-1-preferred-using-a-cloud-instance)
+	- [1.1 Installing Google Cloud SDK](#11-installing-google-cloud-sdk)
+	- [1.2 Installing IGV](#12-installing-igv)
 - [2. Option 2: manual installation](#2-option-2-manual-installation)
 	- [2.1 Softwares and packages](#21-softwares-and-packages)
 	- [2.2 Data files](#22-data-files)
@@ -20,104 +19,21 @@ title:
 
 <!-- /MarkdownTOC -->
 
-# 1. Option 1 (preferred): using a Docker image
+# 1. Option 1 (preferred): using a cloud instance
 
-## 1.1 Installing Docker
+## 1.1 Installing Google Cloud SDK
 
-The preferred option to install all softwares and packages is to use a tailor-made Docker image. See [this nice introduction to Docker here](https://aws.amazon.com/docker/).   
+The [Google Cloud Software Development Kit (SDK)](https://cloud.google.com/sdk) is a set of tools that allows you to connect to a Google Cloud machine from your local computer. We will assign you specific cloud machines at the beginning of the course.
 
-There are two Docker images necessary to complete this RNA-seq lesson:
-1. The command-line Docker `fastq-2021` image necessary to perform all bioinformatic analyses on the sequencing files: trimming, alignment and count table generation.
-2. The RStudio Docker `rnaseq-2021` image necessary to perform all count-related analyses: EDA, differential expression and downstream functional analyses.   
+1. Open [Install the gcloud CLI](https://cloud.google.com/sdk/docs/install) in your browser.
+2. Scroll down and select your operating system, then follow the instructions for installation.
 
+## 1.2 Installing IGV
 
-So first thing first, we need to install Docker itself. 
+The [Integrated Genome Viewer (IGV](https://software.broadinstitute.org/software/igv/) is a genome viewer which allows you to view the alignment of your RNAseq reads to the genome. 
 
-> ## Install Docker
-> Unfortunately, in many common situations installing Docker on your laptop will not straightforward if you do not have a large amount of technical experience. We have helpers on hand that have worked their way through the install process but be prepared for some troubleshooting.
-> Please try to install the appropriate software from the list below depending on the operating system that your laptop is running:
-> ### Microsoft Windows
-> **You must have admin rights to run docker!** Some parts of the lesson will work without running as admin but if you are unable to `Run as admin` on your machine some of this workshop might not work easily.
-> 
-> If you have Windows 10 Pro Edition:
->  - First try to install the [Docker Desktop (Windows)](https://hub.docker.com/editions/community/docker-ce-desktop-windows), or **failing that**;
-> - Install the [Docker Toolbox (Windows)](https://docs.docker.com/toolbox/toolbox_install_windows/).
->
-> If you have Windows 10 Home Edition:
-> - Install the [Docker Toolbox (Windows)](https://docs.docker.com/toolbox/toolbox_install_windows/).
->
-> ### Apple macOS
-> Either:
-> - First, try to install the [Docker Desktop (Mac)](https://hub.docker.com/editions/community/docker-ce-desktop-mac), or **failing that**:
-> - Install the [Docker Toolbox (Mac)](https://docs.docker.com/toolbox/toolbox_install_mac/).
-> 
-> ### Linux
-> There are too many varieties of Linux to give precise instructions here, but hopefully you can locate documentation for getting Docker installed on your Linux distribution. It may already be installed. Note that Docker do list a number of versions of the Docker Engine for different Linux distributions [here](https://hub.docker.com/search/?type=edition&offering=community). 
->
-> ### Troubleshooting
-> Sometimes with git-bash and Windows, you can get issues listed here:   
-> `the input device is not a TTY.  If you are using mintty, try prefixing the command with 'winpty'`. This can be troubleshooted following [this blog post](https://pitman.io/posts/tips-for-using-docker-from-git-bash-on-windows/).
-{: .prereq}
-
-
-
-## 1.2 The `fastq-2022` image for bioinformatic steps (episodes 03 and 04)
-
-This Docker image will allow you to complete the [episodes 03](https://scienceparkstudygroup.github.io/rna-seq-lesson/03-qc-of-sequencing-results/index.html) and [04](https://scienceparkstudygroup.github.io/rna-seq-lesson/04-bioinformatic-workflow/index.html) that work on `.fastq` sequencing files.
-
-The Docker image is called `fastq-2022` and contains softwares and data required for the command-line part of the lesson. It can be found [found at the Science Park Study Group DockerHub](https://hub.docker.com/repository/docker/mgalland/docker-for-teaching/general) with the tag `fastq-2022`.
-
-> ## Before you start
->
-> Before the training, please make sure you have done the following: 
->
-> 1. First, install [Docker desktop](https://www.docker.com/products/docker-desktop) for your operating system (Mac OS X or Windows).  
-> 2. If needed, install Shell Bash: [follow these instructions](http://swcarpentry.github.io/shell-novice/setup.html).
-> 3. Open a new Shell Bash window and navigate to a folder that will be your workspace. For instance, you could create a folder named `rnaseq-tutorial/` on your Desktop and move inside with the Shell using `cd ~/Desktop/rnaseq-tutorial/`. 
-> 4. In a Shell Bash window, type the following command: `docker run -it --name bioinfo -v $PWD:/workspace/ scienceparkstudygroup/master-gls:fastq-2021`. This will download a Docker image for the bioinformatic part of the course, create and run a container where Bash will be running. You will enter the container directly where you can start working.     
-> 5. To quit, type `exit` and you will exit the container and be on your machine file system again. The container will be stopped. 
-> 6. To go back to the container, type `docker start bioinfo` and then `docker exec -it bioinfo bash`. You will enter inside the container again where you can find all softwares and data. 
-> 7. Type `exit` to go back to your file system. 
-{: .prereq}
-
-__Docker command-line explanations:__  
-- The `--it` starts an interactive session in which you directly start AND enter the container.       
-- The `--name` gives a name to the container for easy retrieval.  
-- The `-v $PWD:/workspace/` maps your working directory (e.g. `~/Desktop/rnaseq-tutorial`) to the container `/workspace/` folder. 
-
-
-## 1.3 The `rnaseq-2022` image for the gene counts data analysis (episodes 05, 06 and 07)
-
-This image is based on a [Bioconductor Docker image release 3.14](https://hub.docker.com/r/bioconductor/bioconductor_docker/tags) image with additional packages such as `pheatmap` or `tidyverse`.
-
-The image can be [found at the Science Park Study Group DockerHub](https://hub.docker.com/repository/docker/mgalland/docker-for-teaching/general) with the tag `rnaseq-2022`.
-
-
-> ## Before you start
->
-> Before the training, please make sure you have done the following: 
->
-> 1. First, install [Docker desktop](https://www.docker.com/products/docker-desktop) for your operating system.  
-> 2. If needed, install Shell Bash: [follow these instructions](http://swcarpentry.github.io/shell-novice/setup.html).
-> 3. Open a new Shell Bash window and navigate to a folder that will be your workspace. For instance, you could create a folder named `workspace/` on your Desktop and move inside with the Shell using `cd ~/Desktop/workspace/`. 
-> 4. In a Shell Bash window, type the following command: `docker run --detach --name machine01 -e PASSWORD=mypwd -p 8787:8787 scienceparkstudygroup/master-gls:rnaseq-2021`. This will download a Docker image for the course, create and run a container where RStudio will be running.   
-> 4. Navigate to [http://localhost:8787](http://localhost:8787) in your web browser. You should have an RStudio session running. Type `rstudio` as the user name and `mypwd` as your password. 
-> 5. To quit, close the web browser window where RStudio is running and exit the Shell too. 
-{: .prereq}
-
- 
-
-> ## Important note
->
-> You can save files to your disk when working inside the Docker-powered R session. You need to save them as you would normally. The files (e.g. `my_plot.png`) will be where you were working (the directory from which you launched the Docker container). 
->
-{: .callout}
-
-
-__Docker command-line explanations:__  
-- The `--rm` removes the container when it has been run. No need to store it into your computer after use.      
-- The `--name` gives a name to the running container for easy retrieval.  
-- The `-p 8787:8787` follow the format `-p host_port:container_port`. Therefore the port 8787 inside the container will be exposed to the outside port on the host machine. That way, the running instance of RStudio can be access through the <IP address>:port format.
+1. Open [IGV Downloads](https://software.broadinstitute.org/software/igv/download) in your browser.
+2. Select the installation that matches your operating system.
 
 # 2. Option 2: manual installation
 This is the second way to install softwares and packages. It _should_ work but there is no guarantee that it _will_ work since R and packages versions on your machine might be different from the software and package versions used in this lesson. Thus, the preferred way is still to use the Docker image (option 1).  
