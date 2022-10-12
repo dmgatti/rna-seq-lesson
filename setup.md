@@ -30,7 +30,7 @@ The [Google Cloud Software Development Kit (SDK)](https://cloud.google.com/sdk) 
 
 ## 1.2 Installing IGV
 
-The [Integrated Genome Viewer (IGV](https://software.broadinstitute.org/software/igv/) is a genome viewer which allows you to view the alignment of your RNAseq reads to the genome. 
+The [Integrated Genome Viewer (IGV)](https://software.broadinstitute.org/software/igv/) is a genome viewer which allows you to view the alignment of your RNAseq reads to the genome. 
 
 1. Open [IGV Downloads](https://software.broadinstitute.org/software/igv/download) in your browser.
 2. Select the installation that matches your operating system.
