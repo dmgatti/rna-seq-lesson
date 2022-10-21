@@ -23,6 +23,7 @@ keypoints:
 - [1. Table of contents](#1-table-of-contents)
 - [2. Introduction](#2-introduction)
     - [2.1. The fastq format](#21-the-fastq-format)
+    - [2.1.1. Logging onto Google Cloud instance](#211-logging-onto-google-cloud-instance)
 - [3. Quality control of FASTQ files](#3-quality-control-of-fastq-files)
     - [3.1. Running FastQC](#31-running-fastqc)
     - [3.2. Viewing the FastQC results](#32-viewing-the-fastqc-results)
@@ -68,40 +69,45 @@ The [FASTQ](https://en.wikipedia.org/wiki/FASTQ_format) file format is the defac
 |3|Always begins with a '+' and sometimes the same info in line 1|
 |4|Has a string of characters which represent the quality scores; must have same number of characters as line 2|
 
-## 2.2 Creating the workspace folder
+### 2.1.1 Logging onto Google Cloud instance
 
-Please make sure you have completed the [Setup section](../setup.html) ideally with the Docker option. 
+Please make sure you have completed the [Setup section](../setup.html) with the Google Cloud option. 
 
-You should be outside of the Docker container for now, pick your favorite folder on your machine and create a `workspace/` where the work will take place. 
+1. Log onto your Google Cloud instance by opening a Google Cloud SDK shell.
+2. In the shell, type (or copy and paste) the following command, replacing "name-of-your-instance" with the name of the GCP machine that you recieved at the beginning of the workshop.
 
 ~~~
-$ mkdir workspace/
+$ gcloud compute ssh --zone "us-east1-b" "name-of-your-instance" --project "jax-bioinfo-training-01"
 ~~~
 {: .bash}
 
-Finally, move to the workspace folder:
+This may open a new window which will be a shell into your GCP instance.
+
+## 2.2 Creating the workspace folder
+
+You should be outside of the Docker container for now. Change into the `/rnaseq` directory on your machine where the work will take place. 
 
 ~~~
-$ cd workspace/ 
+$ cd /rnaseq
 ~~~
 {: .bash}
 
 ## 2.3 Getting familiar with the Docker container
 
-Now we will (i) download the required Docker image and (ii) start the Docker container that we will call `bioinfo` and that contains all tutorial softwares and datasets. 
+Now we will start the Docker container that we will call `fastqc` and that contains all tutorial softwares and datasets. 
 
 Docker does this in one single-step with the `docker run` command. 
 
 ~~~
-$ docker run -v $PWD:/workspace/ --name fastq -it mgalland/docker-for-teaching:fastq-2022
+$ docker run -v $PWD:/workspace/ --name fastqc -it fastqc
 ~~~
 {: .bash}
 
 Some explanation here:
 * `--name`: our container is named `fastq` so you can use this when performing actions on your container.  
 * `-it`: starts an interactive bash session inside your container upon start up.
-* `-v $PWD:/workspace/`: this has linked your current working directory (called `tutorial/`) to a new directory inside the container called `workspace/`. We use different names to know where we are.  
-* `mgalland/docker-for-teaching:fastq-2022`: this downloads a specific Docker image from an online resource called DockerHub. 
+* `-v $PWD:/workspace/`: this has linked your current working directory (called `rnaseq/`) to a new directory inside the container called `workspace/`. We use different names to know where we are.  
+* `fastqc`: this runs a specific Docker image from an online resource called DockerHub. 
 
 Everything that happens inside the container in the `workspace/` folder of your Docker container will be mirrored outside in the `workspace/` folder of your local machine.  
 
@@ -120,8 +126,9 @@ $ exit
 {: .bash}
 
 You can re-enter the container with:
+
 ~~~
-$ docker start -a -i bioinfo
+$ docker start -ai fastqc
 ~~~
 {: .bash}
 
@@ -132,11 +139,12 @@ $ docker start -a -i bioinfo
 
 ## 2.4 A first peek at our FASTQ files
 
-Several sequencing files are available in the `/datasets/` folder as it contains 4 fastq files. The files are generaly quite big (they usualy contain up to 40 milion reads), so it's a smart thing to keep them zipped as they are.  
+Several sequencing files are available in the `/workspace/data/fastq_files/` folder as it contains 4 fastq files. The files are generaly quite big (they usualy contain up to 40 milion reads), so it's a smart thing to keep them zipped as they are.  
 
 Let's move to the directory that contains the sequencing files (.fastq.gz) and other needed files e.g. genome reference sequence.  
+
 ~~~
-cd /datasets/
+cd /workspace/data/fastq_files/
 ls
 ~~~
 {: .bash}
@@ -236,8 +244,6 @@ We will now create the quality reports of the reads that we downloaded.
 First, we need to make an output directory for the fastqc results to be stored. This we want to do in the 'home' directory that contains all the needed files.
 
 ~~~
-# activating conda environment to access the fastqc command-line tool
-$ conda activate fastq
 $ cd /workspace/
 
 $ mkdir fastqc
@@ -248,7 +254,7 @@ $ mkdir fastqc
 Next we need to get to the directory that actually contains the the fastq files.
 
 ~~~
-$ cd /datasets/
+$ cd data/fastq_files/
 ~~~
 {: .bash}
 
@@ -256,21 +262,22 @@ $ cd /datasets/
 Running fastqc uses the following command
 
 ~~~
-fastqc -o /workspace/fastqc /datasets/Arabidopsis_sample1.fq.gz
+fastqc -o /workspace/fastqc Arabidopsis_sample1.fq.gz
 ~~~
 {: .bash}
 
 Of course we don't want to do this for all the samples seperately so we can loop through the list of samples and run them all sequentially.
 Using  `echo`, you can start off with a "dry run":  
+
 ~~~
-$ for filename in  /datasets/*.fq.gz
+$ for filename in *.fq.gz
   do
     echo fastqc -o fastqc $filename
   done
 ~~~
 {: .bash}
 
-The echo command only prints the commands to the screen, and doesn't really run it.
+The echo command only prints the commands to the screen, and doesn't really run it. This give you a chance to make sure that your commands are correct.
 
 ~~~
 fastqc -o fastqc Arabidopsis_sample1.fq.gz
@@ -285,7 +292,7 @@ If it looks good remove the echo and go for it.
 ~~~
 $ for filename in *.fq.gz
   do
-    fastqc -o fastqc $filename
+    fastqc -o /workspace/fastqc $filename
   done
 ~~~
 {: .bash}
@@ -319,9 +326,10 @@ $ fastqc -h
 {: .bash}
 
 But if all went right, the FastQC program will have created several new files within our
-`/home/fastqc` directory.
+`/workspace/fastqc` directory.
 
 ~~~
+$  cd ../..
 $  ls fastqc/
 ~~~
 {: .bash}
@@ -360,9 +368,8 @@ browsers installed on it, so the remote computer doesn't know how to
 open the file. We want to look at the webpage summary reports, so
 let's transfer them to our local computers (i.e. your laptop).
 
-If you're also working on a remote computer you will first have to copy 
-the files outside of the container using `docker cp` and next from the 
-remote computer to your local computer with the help of `scp`.
+You will first have to copy the files from your 
+GCP machine to your local computer with the help of `scp`.
 
 First we need to exit the container and next we can transfer our HTML 
 files to our local computer.
@@ -377,31 +384,25 @@ $ cd ~/Desktop/fastqc
 Inside the `Desktop/fastqc/` folder, on your local computer, make use of the following command to download the files to your local computer. 
 
 ~~~
-$ scp -r root@[your machine IP address]:/workspace/fastqc/*.html ~/Desktop/fastqc/
+$ gcloud compute scp --zone us-east1-b --project jax-bioinfo-training-01 rnaseq-training:/rnaseq/fastqc/*.html .
 ~~~
 {: .bash}
 
+The first part of this command, `gcloud compute scp` start the Google Cloud secure copy command. Secure copy (scp) is a protocol for copying files to and from a remote computer.
 
-As a reminder, the first part of the command `root@[your machine IP address]` is
-the address for your remote computer. Make sure you replace everything
-after `root@` with your instance number (the one you used to log in).
+The second part, `--zone us-east1-b --project jax-bioinfo-training-01`, tells Google Cloud that our machine instances are in the US East zone and that the project we are working in is the 'jax-bioinfo-training-01' project. This is a project that we have set up for this class.
 
-The second part starts with a `:` and then gives the absolute path
-of the files you want to transfer from your remote computer. Don't
-forget the `:`. We used a wildcard (`*.html`) to indicate that we want all of
-the HTML files.
+The third part, `rnaseq-training:/rnaseq-tutorial/fastqc/*.html`, consists of two parts. The `rnaseq-training` before the colon is the name of your GCP machine. This is followed by a colon. The second part, `/rnaseq-tutorial/fastqc/*.html` is the path to the files to be copied from your GCP instance.
 
-The third part of the command gives the absolute path of the location
-you want to put the files. This is on your local computer and is the
-directory we just created `~/Desktop/fastqc/`.
-
-The `-r` option is used to tell scp to recursively copy the source directory and its contents.
+The last part, `.`, tells Google Cloud to copy the files to the current directory.
 
 You should see a status output like this:
 
 ~~~
-Arabidopsis_sample1_fastqc.html                      100%  249KB 152.3KB/s   00:01    
-Arabidopsis_sample2_fastqc.html                      100%  254KB 219.8KB/s   00:01      
+Arabidopsis_sample1_fastq | 234 kB | 234.3 kB/s | ETA: 00:00:00 | 100%
+Arabidopsis_sample3_fastq | 233 kB | 233.7 kB/s | ETA: 00:00:00 | 100%
+Arabidopsis_sample2_fastq | 239 kB | 239.6 kB/s | ETA: 00:00:00 | 100%
+Arabidopsis_sample4_fastq | 236 kB | 236.1 kB/s | ETA: 00:00:00 | 100%     
 ~~~
 {: .output}
 
@@ -547,7 +548,7 @@ let's look more closely at the other output files.
 Go back to the tab in your Shell and get back inside your container. 
 
 ~~~
-$ docker start -a -i bioinfo
+$ docker start -ai fastqc
 ~~~
 {: .bash}
 
@@ -571,7 +572,6 @@ to decompress these files. Let's try doing them all at once using a
 wildcard.
 
 ~~~
-$ conda install -c conda-forge unzip
 $ unzip *.zip
 ~~~
 {: .bash}
@@ -596,9 +596,9 @@ discuss what we're doing with each line of our loop.
 
 ~~~
 $ for filename in *.zip
-> do
->  unzip $filename
-> done
+  do
+    unzip $filename
+  done
 ~~~
 {: .bash}
 
@@ -713,22 +713,20 @@ $ cat */summary.txt > fastqc_summaries.txt
 ~~~
 {: .bash}
 
+At this point, we can exit the fastqc Docker container.
+
+~~~
+$ exit
+~~~
+{: .bash}
+
+This will return you to the top-level shell on your GCP instance.
+
 # 4. Trimming and filtering
 
 Before we will do the alignment we need to remove sequences of low quality and sequences that are to short (below 25 bases).
 Also in this case we will trim down long sequences to 100 bases, quality of the Ion-torrent reads drops the further it gets.
 When making use of illumina reads this is not as much of a problem and 3'-trimming would then be a waste of data.
-
-To start off make a directory trimmed for the output and then back to the rawReads directory.
-
-~~~
-$ cd /workspace/
-$ mkdir trimmed
-$ cd datasets/
-~~~
-{: .bash}
-
-
 
 The trimming and quality filtering will be done with **trimmomatic**.
 In the programm the following arguments can be used.
@@ -747,9 +745,43 @@ In the programm the following arguments can be used.
 |  `TOPHRED64` |  Convert quality scores to Phred-64. |
 
 
+First, we need to start the Trimmomatic Docker container:
+
+~~~
+$ cd /rnaseq/
+$ docker run -v $PWD:/workspace/ --name trimmomatic -it trimmomatic
+~~~
+{: .bash}
+
+If you accidently exit the trimmomatic Docker container, use this command to get back in:
+
+~~~
+docker start -ai trimmomatic
+~~~
+{: .bash}
+
+To start off make a directory trimmed for the output and then back to the fastq file directory.
+
+~~~
+$ mkdir /workspace/trimmed
+~~~
+{: .bash}
+
+
 To run this on a single sample it looks something like this
 ~~~
-$ trimmomatic SE -phred33 -threads 1 Arabidopsis_sample1.fq.gz /workspace/trimmed/Arabidopsis_sample1_qc.fq ILLUMINACLIP:adapters.fasta:2:30:10 LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:25
+$ cd /workspace/
+$ java -jar /usr/share/java/trimmomatic.jar \
+   SE \
+   -phred33 \
+   -threads 1 \
+   data/fastq_files/Arabidopsis_sample1.fq.gz \
+   /workspace/trimmed/Arabidopsis_sample1_qc.fq \
+   ILLUMINACLIP:/workspace/data/fastq_files/adapters.fasta:2:30:10 \
+   LEADING:3 \
+   TRAILING:3 \
+   SLIDINGWINDOW:4:15 \
+   MINLEN:25
 ~~~
 {: .bash}
 
@@ -761,7 +793,7 @@ this can be done with the help of 'basename'
 
 
 ~~~
-$ for infile in *.fq.gz
+$ for infile in data/fastq_files/*.fq.gz
 do
  echo inputfile $infile
  outfile="$(basename $infile .fq.gz)"_qc.fq
@@ -793,10 +825,10 @@ Next we can start writing the trimmomatic loop.
 Again starting with a dry run with echo.
 
 ~~~
-$ for infile in *.fq.gz
+$ for infile in data/fastq_files/*.fq.gz
 do
   outfile="$(basename $infile .fq.gz)"_qc.fq
-  echo "trimmomatic SE -phred33 -threads 2 $infile /workspace/trimmed/$outfile ILLUMINACLIP:adapters.fasta:2:30:10 LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:25"
+  echo "java -jar /usr/share/java/trimmomatic.jar SE -phred33 -threads 2 $infile /workspace/trimmed/$outfile ILLUMINACLIP:/workspace/data/fastq_files/adapters.fasta:2:30:10 LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:25"
 done
 ~~~
 {: .bash}
@@ -805,10 +837,10 @@ done
 should be producing something like this
 
 ~~~
-trimmomatic SE -phred33 -threads 2 Arabidopsis_sample1.fq.gz trimmed/Arabidopsis_sample1.fq.gz_qc.fq ILLUMINACLIP:adapters.fasta:2:30:10 LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:25
-trimmomatic SE -phred33 -threads 2 Arabidopsis_sample2.fq.gz trimmed/Arabidopsis_sample2.fq.gz_qc.fq ILLUMINACLIP:adapters.fasta:2:30:10 LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:25
-trimmomatic SE -phred33 -threads 2 Arabidopsis_sample3.fq.gz trimmed/Arabidopsis_sample3.fq.gz_qc.fq ILLUMINACLIP:adapters.fasta:2:30:10 LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:25
-trimmomatic SE -phred33 -threads 2 Arabidopsis_sample4.fq.gz trimmed/Arabidopsis_sample4.fq.gz_qc.fq ILLUMINACLIP:adapters.fasta:2:30:10 LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:25
+java -jar /usr/share/java/trimmomatic.jar SE -phred33 -threads 2 Arabidopsis_sample1.fq.gz trimmed/Arabidopsis_sample1.fq.gz_qc.fq ILLUMINACLIP:adapters.fasta:2:30:10 LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:25
+java -jar /usr/share/java/trimmomatic.jar SE -phred33 -threads 2 Arabidopsis_sample2.fq.gz trimmed/Arabidopsis_sample2.fq.gz_qc.fq ILLUMINACLIP:adapters.fasta:2:30:10 LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:25
+java -jar /usr/share/java/trimmomatic.jar SE -phred33 -threads 2 Arabidopsis_sample3.fq.gz trimmed/Arabidopsis_sample3.fq.gz_qc.fq ILLUMINACLIP:adapters.fasta:2:30:10 LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:25
+java -jar /usr/share/java/trimmomatic.jar SE -phred33 -threads 2 Arabidopsis_sample4.fq.gz trimmed/Arabidopsis_sample4.fq.gz_qc.fq ILLUMINACLIP:adapters.fasta:2:30:10 LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:25
 ~~~
 {: .output}
 
@@ -816,10 +848,20 @@ trimmomatic SE -phred33 -threads 2 Arabidopsis_sample4.fq.gz trimmed/Arabidopsis
 If it all looks ok, rerun with out `echo`
 
 ~~~
-$ for infile in *.fq.gz
+$ for infile in data/fastq_files/*.fq.gz
 do
   outfile="$(basename $infile .fq.gz)"_qc.fq
-  trimmomatic SE -phred33 -threads 2 $infile /workspace/trimmed/$outfile ILLUMINACLIP:adapters.fasta:2:30:10 LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:25
+  java -jar /usr/share/java/trimmomatic.jar \
+    SE \
+    -phred33 \
+    -threads 2 \
+    $infile \
+    /workspace/trimmed/$outfile \
+    ILLUMINACLIP:/workspace/data/fastq_files/adapters.fasta:2:30:10 \
+    LEADING:3 \
+    TRAILING:3 \
+    SLIDINGWINDOW:4:15 \
+    MINLEN:25
 done
 ~~~
 {: .bash}
@@ -841,6 +883,14 @@ TrimmomaticSE: Completed successfully
 {: .output}
 
 It's possible to scroll up to check if the percentage of surviving & dropped is within the same range in all of the samples.
+
+
+Finally, exit the Trimmomatic Docker container.
+
+~~~
+$ exit
+~~~
+{: .bash}
 
 
 
@@ -902,16 +952,27 @@ Then the seeds are stitched together based on the best alignment for the read (s
 ## 5.1. Index the reference genome
 Our first step is to index the reference genome for use by STAR. Indexing allows the aligner to quickly find potential alignment sites for query sequences in a genome, which saves time during alignment. Indexing the reference only has to be run once. The only reason you would want to create a new index is if you are working with a different reference genome or you are using a different tool for alignment (index files are not exchangeable between tools).
 
+First, we will start the STAR docker container:
+
+~~~
+$ cd /rnaseq/
+$ docker run -v $PWD:/workspace/ --name star -it star
+~~~
+{: .bash}
+
 Take note that depending on the genome size these index files produced by STAR can be pretty big. Make sure there's enough disk space available.
 
 ~~~
-$ cd /home/
+$ cd /workspace/
 
 $ mkdir genomeIndex
 
-$ gunzip AtChromosome1.fa.gz
+$ gunzip -c data/fastq_files/AtChromosome1.fa.gz > ./AtChromosome1.fa
 
-$ STAR --runMode genomeGenerate --genomeDir genomeIndex --genomeFastaFiles AtChromosome1.fa --runThreadN 2
+$ STAR --runMode genomeGenerate \
+       --genomeDir genomeIndex \
+       --genomeFastaFiles AtChromosome1.fa \
+       --runThreadN 2
 ~~~
 {: .bash}
 
@@ -953,24 +1014,30 @@ result should be:
 ~~~
 {: .output}
 
+Now that we have created the genome index, we can remove the unzipped Arabadopsis fasta file.
+
+~~~
+$ rm AtChromosome1.fa
+~~~
+{: .bash}
 
 
 ## 5.2. Align reads to reference genome
 
-In some tools like hisat2 creating the sequence alignment files (bam-files) is done in two steps. first the aligning it self. After that the alignment file will be filtered for instance to only contain the reads that actualy map to the genome. This is done with [sam flags](https://broadinstitute.github.io/picard/explain-flags.html) in samtools view (with the '-F 4' all the unmapped reads will be removed). STAR on the other hand has a build in filter and also a sort function. So the output is ready to use for downstream tools.  
+In some tools like hisat2 creating the sequence alignment files (bam-files) is done in two steps. First the aligning it self. After that the alignment file will be filtered for instance to only contain the reads that actualy map to the genome. This is done with [sam flags](https://broadinstitute.github.io/picard/explain-flags.html) in samtools view (with the '-F 4' all the unmapped reads will be removed). STAR on the other hand has a built in filter and also a sort function. So the output is ready to use for downstream tools.  
 
 
 
 First of course we will need to create a directory to output the alignment files
 
 ~~~
-$ cd /home/
+$ cd /workspace/
 
 $ mkdir mapped
 ~~~
 {: .bash}
 
-Running STAR to align ( or map ) the reads and optionaly filter and sort them.
+Running STAR to align ( or map ) the reads and optionally filter and sort them.
 
 In contrast to most tools, STAR does not have a help function.
 running STAR -h or STAR --help will result in an error. For information on what arguments to use you can 
@@ -999,7 +1066,15 @@ Here are some examples of common used arguments.
 
 For now we will be using STAR with the following arguments
 ~~~
-$  STAR --genomeDir genomeIndex --runThreadN 2 --readFilesIn trimmed/Arabidopsis_sample1_qc.fq --outFileNamePrefix mapped/Arabidopsis_sample1_qc --outSAMtype BAM SortedByCoordinate --outSAMunmapped None --outFilterMismatchNmax 3 --outFilterMultimapNmax 1 --outSAMattributes All
+$  STAR --genomeDir genomeIndex \
+        --runThreadN 2 \
+        --readFilesIn trimmed/Arabidopsis_sample1_qc.fq \
+        --outFileNamePrefix mapped/Arabidopsis_sample1_qc \
+        --outSAMtype BAM SortedByCoordinate \
+        --outSAMunmapped None \
+        --outFilterMismatchNmax 3 \
+        --outFilterMultimapNmax 1 \
+        --outSAMattributes All
 ~~~
 {: .bash}
 
@@ -1012,7 +1087,15 @@ It's good again to first start with a 'dry' run with the use of echo
 $ for infile in trimmed/*.fq
  do
    outfile="$(basename $infile .fq)"_
-   echo "STAR --genomeDir genomeIndex --runThreadN 2 --readFilesIn trimmed/$infile --outFileNamePrefix mapped/$outfile --outSAMtype BAM SortedByCoordinate --outSAMunmapped None --outFilterMismatchNmax 3 --outFilterMultimapNmax 1 --outSAMattributes All"
+   echo "STAR --genomeDir genomeIndex \
+              --runThreadN 2 \
+              --readFilesIn trimmed/$infile \
+              --outFileNamePrefix mapped/$outfile \
+              --outSAMtype BAM SortedByCoordinate \
+              --outSAMunmapped None \
+              --outFilterMismatchNmax 3 \
+              --outFilterMultimapNmax 1 \
+              --outSAMattributes All"
  done
 ~~~
 {: .bash}
@@ -1020,10 +1103,18 @@ $ for infile in trimmed/*.fq
 If the commands look good, rerun but this time without the echo.
 
 ~~~
-$for infile in trimmed/*.fq
+$ for infile in trimmed/*.fq
  do
    outfile="$(basename $infile .fq)"_
-   STAR --genomeDir genomeIndex --runThreadN 2 --readFilesIn trimmed/$infile --outFileNamePrefix mapped/$outfile --outSAMtype BAM SortedByCoordinate --outSAMunmapped None --outFilterMismatchNmax 3 --outFilterMultimapNmax 1 --outSAMattributes All
+   STAR --genomeDir genomeIndex \
+        --runThreadN 2 \
+        --readFilesIn trimmed/$infile \
+        --outFileNamePrefix mapped/$outfile \
+        --outSAMtype BAM SortedByCoordinate \
+        --outSAMunmapped None \
+        --outFilterMismatchNmax 3 \
+        --outFilterMultimapNmax 1 \
+        --outSAMattributes All
  done
 ~~~
 {: .bash}
@@ -1041,7 +1132,7 @@ May 04 12:55:59 ..... Finished successfully
 The final.out file contains all the characteristics of the alignment.
 
 ~~~
-$ less mapped/Arabidopsis_sample1_qc.final.out
+$ more mapped/Arabidopsis_sample1_qcLog.final.out
 ~~~
 {: .bash}
 
@@ -1085,10 +1176,10 @@ Arabidopsis_sample1_qcLog.final.out (END)
 
 ## 5.3. Align reads to reference genome using hisat2
 <br>
-Alternatively it is possible to map the reads using hisat2. This tools works simular to star and gives a simular output. The commands are just a bit different.
+Alternatively it is possible to map the reads using hisat2. This tools works similar to star and gives a similar output. The commands are just a bit different.
 <br>
 <br>
-To start off we need to install the tools as it is not inclded in the fastq environment.
+To start off we need to install the tools as it is not included in the fastq environment.
 ~~~
 $ conda install -c biobuilds hisat2
 ~~~
