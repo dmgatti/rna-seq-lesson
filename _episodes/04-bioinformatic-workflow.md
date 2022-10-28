@@ -136,10 +136,20 @@ The mpileup command produces a pileup format (or BCF) file giving, for each geno
 - **flagstat**    
 Counts the number of alignments for each FLAG type.  
 
+First, we need to start the samtools Docker container.
+
+~~~
+$ cd /rnaseq/
+$ docker run -v $PWD:/workspace/ --name samtools -it samtools
+$ cd /workspace/mapped/
+~~~
+{: .language-bash}
+
 
 Looking at the content of the file using samtools view:
+
 ~~~
-$ samtools view Arabidopsis_sample1.bam | head
+$ samtools view Arabidopsis_sample1_qc_Aligned.sortedByCoord.out.bam | head
 ~~~
 {: .language-bash}
 
@@ -165,8 +175,9 @@ SAMtools `view` can be used to filter the alignment based on characters like map
 
 <br>
 Count the total number of records:  
+
 ~~~
-$ samtools view -c Arabidopsis_sample1.bam 
+$ samtools view -c Arabidopsis_sample1_qc_Aligned.sortedByCoord.out.bam 
 ~~~
 {: .language-bash}
 
@@ -177,8 +188,9 @@ $ 263657
 <br>
 
 Count with `flagstat` for additional information:
+
 ~~~
-$ samtools flagstat arabidopsis1.bam
+$ samtools flagstat Arabidopsis_sample1_qc_Aligned.sortedByCoord.out.bam
 ~~~
 {: .language-bash}
 
@@ -203,7 +215,7 @@ $ samtools flagstat arabidopsis1.bam
 Count the records using the [FLAG](https://broadinstitute.github.io/picard/explain-flags.html) argument. 
 Count the alignments that don't align.  
 ~~~
-$ samtools view -f 4 -c Arabidopsis_sample1.bam
+$ samtools view -f 4 -c Arabidopsis_sample1_qc_Aligned.sortedByCoord.out.bam
 ~~~
 {: .language-bash}
 
@@ -216,7 +228,7 @@ The argument `-f` includes reads that fit samflag 4, read unmapped.
 
 Count the reads that do align:  
 ~~~
-$ samtools view -F 4 -c Arabidopsis_sample1.bam
+$ samtools view -F 4 -c Arabidopsis_sample1_qc_Aligned.sortedByCoord.out.bam
 ~~~
 {: .bash}
 
@@ -235,9 +247,16 @@ Here `-F` is used to exclude reads that fit samflag 4, read unmapped. Everything
 {: .challenge}
 <br>
 
+Create a new directory for the filtered BAM files:
+
+~~~
+mkdir /workspace/filtered
+~~~
+{: .bash}
+
 Write your selection to a new file:
 ~~~
-samtools view -Sb -F 4 -o Arabidopsis_sample1_mapped.bam Arabidopsis_sample1.bam
+samtools view -Sb -F 4 -o ../filtered/Arabidopsis_sample1_mapped.bam Arabidopsis_sample1_qc_Aligned.sortedByCoord.out.bam
 ~~~
 {: .language-bash}
 
@@ -246,7 +265,7 @@ In this command `-Sb` is needed to keep the file binairy(compressed), and `-o` s
 
 Count the reads that align to the forward strand:
 ~~~
-$ samtools view -F 20 -c Arabidopsis_sample1.bam
+$ samtools view -F 20 -c Arabidopsis_sample1_qc_Aligned.sortedByCoord.out.bam
 ~~~
 {: .language-bash}
 
@@ -259,7 +278,7 @@ Use `-F 20` to exclude "read reverse strand" and "read unmapped".
 
 Count the reads that align to the reverse strand:
 ~~~
-$ samtools view -f 16 -c Arabidopsis_sample1.bam 
+$ samtools view -f 16 -c Arabidopsis_sample1_qc_Aligned.sortedByCoord.out.bam 
 ~~~
 {: .language-bash}
 
@@ -274,7 +293,7 @@ With `-f 16` you select for "read reverse strand".
 With SAMtools it is also posible to select for alignments with a minimal mapping quality.  
 Alignments with a maximal score (60 for `hisat2` output files and 255 for `STAR` output files) are truly unique:  
 ~~~
-$ samtools view -q 60 -c Arabidopsis_sample1.bam
+$ samtools view -q 60 -c Arabidopsis_sample1_qc_Aligned.sortedByCoord.out.bam
 ~~~
 {: .language-bash}
 
@@ -311,7 +330,12 @@ This can be done making use of SAMtools `sort` and `index` commands.
 Samtools can also be used to sort the read alignments. The aliments will be sorted based on the position ofv the alignment on the reference genome, starting from the beginning of chromosome 1 to the end of the last chromosome.
 
 ~~~
-$ samtools sort -o arabidopsis1_sorted.bam arabidopsis1.bam
+$ cd /workspace/filtered
+~~~
+{: .bash}
+
+~~~
+$ samtools sort -o Arabidopsis_sample1_sorted.bam Arabidopsis_sample1_mapped.bam
 ~~~
 {: .language-bash}
 
@@ -319,49 +343,45 @@ where `-o` defines the name of the output file (also a BAM file).
 The default for samtools sort is sorting by position. There are more sorting posibilities to be found with `samtools sort --help`.  
 
 ### Indexing
+
 An index file is needed to get access rapidly to different alignment regions in the BAM alignment file.    
 ~~~
-samtools index arabidopsis1_sorted.bam
+samtools index Arabidopsis_sample1_sorted.bam
 ~~~
 {: .language-bash}
 
 Only the input file name needs to be specified, based on this name a `.bai` (BAM index) is produced.
 
+Exit the samtools Docker container.
+
+~~~
+$ exit
+~~~
+{: .bash}
+
 
 ### Transfer the files to your local computer
 
 Next the files need to be downloaded to your local computer.   
-First, we need to exit the container (ctrl/cmd + d) and next create a folder on your VM outside the container:
 
+Go to your local computer, create a directory and download the files from the GCP instance:
 ~~~
-$ mkdir IGVfiles
+$ mkdir ~/Desktop/IGV
+$ cd ~/Desktop/IGV
 ~~~
 {: .language-bash}
 
-<br>
-Copy the files (both the `.bam` and the `.bai`), or just the whole content of the directory mapped:
-~~~
-$ docker cp bioinfo:/home/mapped/ ~/IGVfiles/
-~~~
-{: .language-bash}
-
-<br>
-
-Go to your local computer, create a directory and download the files from the VM:
-~~~
-$ mkdir IGV
-~~~
-{: .language-bash}
 <br>
 Download the sorted `.sorted.bam` files:
 ~~~
-$  scp -r root@178.128.240.207:~/home/tutorial/IGVfiles/mapped/*sorted.bam ~/Desktop/IGV
+$ scp rnaseq_user@00.00.00.00:/rnaseq/filtered/*.bam .
 ~~~
 {: .language-bash}
+
 <br>
 And the index (`.bai`) files:
 ~~~
-scp -r root@178.128.240.207:~/home/tutorial/IGVfiles/mapped/*.bai ~/Desktop/IGV
+$ scp rnaseq_user@00.00.00.00:/rnaseq/filtered/*.bai .
 ~~~
 {: .language-bash}
 
@@ -411,13 +431,22 @@ The `featureCounts` program from the [Subread](http://subread.sourceforge.net/) 
 
 `featureCounts` can...count (!) the number of reads that map within a feature. The Arabidopsis genome annotation in the GFF3 format contain three different features to choose from.  
 
-Depending on the downstream applications the choice is `gene`, `transcript` or `exon`. In this study we are just looking for differentially expressed genes so our feature of interest specified by the `-t` will be `gene`.  
+Start the featurecounts Docker container:
+
 ~~~
-$ cd /home/
+$ cd /rnaseq/
+$ docker run -v $PWD:/workspace/ --name featurecounts -it featurecounts
+~~~
+{: .bash}
+
+Depending on the downstream applications the choice is `gene`, `transcript` or `exon`. In this study we are just looking for differentially expressed genes so our feature of interest specified by the `-t` will be `gene`.  
+
+~~~
+$ cd /workspace/data/fastq
 
 $ gunzip ath_annotation.gff3.gz
 
-$ featureCounts -O -t gene -g ID -a ath_annotation.gff3 -o counts.txt mapped/*.bam
+$ featureCounts -O -t gene -g ID -a ath_annotation.gff3 -o ../counts.txt /workspace/mapped/*.bam
 ~~~
 {: .bash}
 
