@@ -153,6 +153,8 @@ In the example below there is clear separation of the three types of [flowers](h
 To load this data in R  first the appropriate dataset have to be installed and loaded.
 ~~~
 library(datasets)
+library(tidyverse)
+library(DESeq2)
 data(iris)
 head(iris)
 ~~~
@@ -183,53 +185,14 @@ The summary of the iris data set display the content of the data. In this case t
 {: .output}
 
 
-For convenience we use a very rudimentary (own) implementation implementation of PCA. Copy-paste this code in your console and execute it to load this function into your environment and use it later on.
-
-~~~
-# define a custom R function called "mypca()"
-mypca <- function(x, center = TRUE, scale = TRUE){
-  # Samples should be in rows
-  # Variables in the columns
-
-  # remove constant variables
-  constant_val = apply(x,2,'sd')
-  x_reduced = x[,constant_val>0]
-  
-  # perform SVD
-  SVD <- svd(scale(x_reduced,center = center, scale = scale))
-  
-  # create scores data frame
-  scores <- as.data.frame(SVD$u %*% diag(SVD$d))
-  rownames(scores) <- rownames(x)
-  colnames(scores) <- paste0("PC", c(1:dim(scores)[2]))
-  
-  # create loadings data frams
-  loadings <- data.frame(SVD$v)
-  colnames(loadings) <- paste0("PC", c(1:dim(loadings)[2]))
-  rownames(loadings) <- colnames(x_reduced)
-  
-  # create data frame for explained variances
-  explained_var <- as.data.frame(round((SVD$d^2) / sum(SVD$d^2)*100, digits = 1))
-  rownames(explained_var) <- paste0("PC", c(1:dim(loadings)[2]))
-  colnames(explained_var) <- "exp_var"
-  
-  # return result
-  return (list("scores" = scores, "loadings" = loadings, "explained_var" = explained_var))
-}
-~~~
-{: .language-r}
-
-The whole function is available here in the [extra functions page]({{page.root}}{%link _extras/extra_functions.md %}).    
-	
 Now we have everything in our R environment into place, we can actually perform the PCA analysis and create the plots.  
-Since the four first principal components catch most if not all 
+Since the four first principal components catch most if not all of the variation.
 
 ~~~
 # perform the PCA analysis on only the first 4 variables (skip the Species variable)
-pca <- mypca(iris[,1:4], scale = TRUE)
-scores = as.data.frame(pca$scores[,1:2])
-scores['Species'] = iris$Species
-explained_var = pca$explained_var$exp_var
+pca = prcomp(iris[,1:4], center = TRUE, scale. = TRUE)
+scores = data.frame(Species = iris$Species, pca$x)
+explained_var = setNames(pca$sdev^2 / sum(pca$sdev^2), colnames(pca$x)) 
 ~~~
 {: .language-r}
 
@@ -242,19 +205,9 @@ explained_var = pca$explained_var$exp_var
 In order to have an idea of how effective the 'compression' or variable reduction of the PCA algorithm was on our data set, we make a so-called 'scree' plot in which the explained variance is expressed as a function of the number of principal components.
 
 ~~~
-# add a convenient column number for the bar plot to display
-dfev <- data.frame(PC = c(1,2,3,4), exp_var  = pca$explained_var)
-
-# make the plot
-scree_plot <- ggplot(dfev, aes(x = PC, y = exp_var)) +
-       ylab('explained variance (%)') + 
-       ggtitle('explained variance per component') + 
-       geom_bar(stat = "identity")
-
-# display it
-scree_plot
+barplot(explained_var)
 ~~~
-{: .language-r}
+{: .language-r} 
 
 <img src="../img/05-pca_iris_scree_plot.png" width="600px" alt="pca_iris_exp_var PCA">
 
@@ -264,12 +217,11 @@ The whole idea behind the analysis is to visualize the high-dimensional data (e.
 
 ~~~
 # plot the scores of the first 2 components
-p <- ggplot(scores) + 
+ggplot(scores) + 
        geom_point(aes(x = PC1, y = PC2, shape = Species, col = Species)) + 
        xlab(paste0('PC1(',explained_var[1],'%)')) + 
        ylab(paste0('PC2(',explained_var[2],'%)')) + 
        ggtitle('PCA score plot')
-p
 ~~~
 {: .language-r}
 
@@ -278,26 +230,20 @@ p
 From the score plot it is clear that the Setosa flowers are clearly different from the Versicolor/Virginica flowers. Versicolor and Virginica cannot be separated on PC1 and/or PC2. Looking at the PC1 vs PC3 however, the two groups can be separated better. It is very important to understand that even if a principal component explains a low amount of variance it still can contain interesting (biological) information. 
 
 > ## Exercise
-> Can you create the score plot with PC1 on the x-axis and PC3 on the y-axis?  
-> __Hint:__ you will have to re-compute the pca results with `mypca(iris[,1:4], center = TRUE, scale = TRUE)` since 
-> the `scores` dataframe only contains sample scores for PC1 and PC2.   
-> __Question:__ can you better separate the samples on PC1 and PC3?
+> Can you create the score plot with PC2 on the x-axis and PC3 on the y-axis?  
+> __Question:__ can you better separate the samples on PC2 and PC3?
 >
 > > ## Solution
 > > ~~~
-> > pca <- mypca(iris[,1:4], center = TRUE, scale = TRUE)
-> > scores = as.data.frame(pca$scores[,1:3])
-> > scores['Species'] = iris$Species
-> > iris_score_plot_pc1_pc3 <- ggplot(scores) + 
-> >       geom_point(aes(x = PC1, y = PC3, shape = Species, col = Species), size = 2) + 
-> > xlab(paste0('PC1(',explained_var[1],'%)')) + 
-> > ylab(paste0('PC2(',explained_var[3],'%)')) + 
-> > ggtitle('PCA score plot: PC1 - PC3')
-> > iris_score_plot_pc1_pc3
+> > ggplot(pc_scores) + 
+> >    geom_point(aes(x = PC2, y = PC3, shape = Species, col = Species)) + 
+> >    xlab(paste0('PC2(',explained_var[2],'%)')) + 
+> >    ylab(paste0('PC3(',explained_var[3],'%)')) + 
+> >    ggtitle('PCA score plot')
 > > ~~
 > > {: .language-r}
 > > <img src="../">
-> > Answer: no, not really. The versicolor and virginica species are still pretty much overlapping.
+> > Answer: No. The different species overlap completely.
 > {: .solution }
 {: .challenge}
 
@@ -307,23 +253,15 @@ The scores are indicative of how the objects in the data set score in the new co
 
 
 ~~~
-library(reshape2) # to access the melt() function
-
 # reformat the loading data
-loadings <- melt(pca$loadings)
-
-# rename the columns
-colnames(loadings)<-c("Component","Value")
-
-# add the 'original' variable names
-loadings['Variable']=as.factor(rep(colnames(iris)[-5],4))
+loadings <- as.data.frame(pca$rotation) %>%
+              rownames_to_column(var = 'variable') %>%
+              pivot_longer(cols = starts_with('PC'), names_to = 'PC', values_to = 'value')
 
 # plot the loading values per components
-loadings_plot <- ggplot(loadings,
-                        aes(x=Variable,y=Value)) +  
-  geom_bar(stat='identity') + 
-  facet_wrap(~Component)
-loadings_plot
+ggplot(loadings, aes(x = variable, y = value)) +  
+  geom_col() + 
+  facet_wrap(~PC)
 ~~~
 {: .language-r}
 
@@ -355,17 +293,13 @@ First, we need to import the **raw gene counts**, the **sample to condition corr
 ## 3.1 Data import
 
 ~~~
-raw_counts <- read.csv("tutorial/raw_counts.csv", 
-                   header = T, 
-                   stringsAsFactors = F) %>% 
-  column_to_rownames("Geneid")
+raw_counts <- read_tsv("counts.txt") %>% 
+                column_to_rownames("gene")
 
-xp_design <- read.delim("tutorial/samples_to_conditions.csv", 
-                        header = T, 
-                        stringsAsFactors = F)
+xp_design <- read_tsv("experimental_design_modified.txt")
 
 # reorder counts columns according to the experimental design file
-counts <- counts[, xp_design$sample]
+raw_counts <- raw_counts[, xp_design$sample]
 
 # first five rows and five columns
 raw_counts[1:5, 1:5]
@@ -399,9 +333,8 @@ If all is well, then create the `dds` object.
 ~~~
 ## Creation of the DESeqDataSet object
 dds <- DESeqDataSetFromMatrix(countData = raw_counts, 
-                              colData = xp_design, 
-                              design = ~ seed + infected + dpi)
-
+                              colData   = xp_design, 
+                              design    = ~ seed + infected + dpi)
 ~~~
 {: .language-r}
 
@@ -417,20 +350,19 @@ This is easy to visualise in the following plot:
 ~~~
 # Plot of mean - sd comparison
 # Variance - mean plot for all genes
-p_mean_sd_scaled <- 
-  raw_counts %>% 
+raw_counts %>% 
   as.data.frame() %>% 
   rownames_to_column("gene") %>% 
-  pivot_longer(cols = - gene, names_to = "sample", values_to = "counts") %>% 
+  pivot_longer(cols = -gene, names_to = "sample", values_to = "counts") %>% 
   group_by(gene) %>% 
-  summarise(gene_average = mean(counts), gene_stdev = sd(counts)) %>% 
+  summarise(gene_average = mean(counts), 
+            gene_stdev   = sd(counts)) %>% 
   ungroup() %>% 
-  ggplot(., aes(x = log10(gene_average), y = log10(gene_stdev))) +
-  geom_point(alpha = 0.5, fill = "grey", colour = "black") +
-  labs(x = "Gene count average (log10 scale)",
-       y = "Gene count standard deviation (log10 scale)") +
-  ggtitle("Mean - Standard deviation relationship\n(no variance stabilisation ")
-p_mean_sd_scaled
+  ggplot(aes(x = log10(gene_average), y = log10(gene_stdev))) +
+    geom_point(alpha = 0.5, fill = "grey", colour = "black") +
+    labs(x = "Gene count average (log10 scale)",
+         y = "Gene count standard deviation (log10 scale)") +
+    ggtitle("Mean - Standard Deviation Relationship\n(no variance stabilisation)")
 ~~~
 {: .language-r}
 
@@ -445,32 +377,31 @@ One can clearly visualise the "heteroscedasticity" of these data: the mean is no
 dds = estimateSizeFactors(dds)
 
 dds = estimateDispersions(object = dds, 
-	                      fitType = "parametric", 
-	                      quiet = TRUE)
+	                      fitType  = "parametric", 
+	                      quiet    = FALSE)
 
 vsd = varianceStabilizingTransformation(object = dds, 
-                                               blind = TRUE,           # do not take the design formula into account
-                                                                       # best practice for sample-level QC
-                                               fitType = "parametric")
+                                        blind = TRUE,          # do not take the design formula into account
+                                                               # best practice for sample-level QC
+                                        fitType = "parametric")
 
 # extract the matrix of variance stabilised counts
 variance_stabilised_counts <- assay(vsd)
 
 # create the mean-sd plot
-p_mean_sd_vst <- 
-  variance_stabilised_counts %>% 
+variance_stabilised_counts %>% 
   as.data.frame() %>% 
   rownames_to_column("gene") %>% 
-  pivot_longer(cols = - gene, names_to = "sample", values_to = "counts") %>% 
+  pivot_longer(cols = -gene, names_to = "sample", values_to = "counts") %>% 
   group_by(gene) %>% 
-  summarise(gene_average = mean(counts), gene_stdev = sd(counts)) %>% 
+  summarise(gene_average = mean(counts), 
+            gene_stdev   = sd(counts)) %>% 
   ungroup() %>% 
   ggplot(., aes(x = gene_average, y = gene_stdev)) +
-  geom_point(alpha = 0.5, fill = "grey", colour = "black") +
-  labs(x = "Gene count average (variance stabilised)", 
-       y = "Gene count standard deviation (variance stabilised)") +
-  ggtitle("Mean - Standard deviation relationship\n(after variance stabilisation ")
-p_mean_sd_vst
+    geom_point(alpha = 0.5, fill = "grey", colour = "black") +
+    labs(x = "Gene count average (variance stabilised)", 
+         y = "Gene count standard deviation (variance stabilised)") +
+    ggtitle("Mean - Standard Deviation Relationship\n(after variance stabilisation0")
 ~~~
 {: .language-r}
 
@@ -480,33 +411,32 @@ Now that the variance is more independent from the mean, we can compute our PCA 
 
 ## 3.3 RNA-seq scree plot
 
-To get an idea of how much variation can be explained by PC1, PC2, PC3, etc., a scree plot can be drawn. 
+To get an idea of how much variation can be explained by PC1, PC2, PC3, etc., we can draw a scree plot. 
 
 First, the PCA is computed using the `mypca()` function. This returns a list with three objects, the `scores`, `loadings` and `explained_var` dataframes. 
 ~~~
-# transpose the data because in variance_stabilised_counts the rows are the variables and the columns correspond to the samples
-t_variance_stabilised_counts <- t(variance_stabilised_counts)
+# Remove genes with no variance. Scaling will not work with genes that have zero variance.
+gene_var <- apply(variance_stabilised_counts, 1, var)
+variance_stabilised_counts2 <- variance_stabilised_counts[gene_var > 0,]
 
 # before computing the PCA, check that samples are in rows and genes in columns
-pca_results <- mypca(t_variance_stabilised_counts, 
-                     center = TRUE, 
-                     scale = TRUE)
+pca_results <- prcomp(t(variance_stabilised_counts2), 
+                      center = TRUE, 
+                      scale. = TRUE)
 ~~~
 {: .language-r}
 
 Then the explained variance dataframe is used to make the scree plot. 
 ~~~
+explained_var <- data.frame(PC      = 1:length(pca_results$sdev),
+                            exp_var = pca_results$sdev^2 / sum(pca_results$sdev^2))
+
 # make the plot
-ggplot(pca_results$explained_var, 
-         aes(x = seq(from = 1, to = nrow(pca_results$explained_var)), 
-             y = exp_var)) +
+ggplot(explained_var, aes(x = PC, y = exp_var)) +
   ylab('explained variance (%)') + 
   ggtitle('Explained variance per component') + 
-  geom_bar(stat = "identity") +
-  labs(x = "Principal Component number") +
-  scale_x_continuous(breaks = seq(
-    from = 1, 
-    to = nrow(pca_results$explained_var)))
+  geom_col() +
+  labs(x = "Principal Component")
 ~~~
 {: .language-r}
 
@@ -518,11 +448,11 @@ ggplot(pca_results$explained_var,
 > 2. How many PCs are necessary to get 50% of the total variance?
 > 
 > > ## Solution
-> > 1. `cumsum(pca_results$explained_var)[2,1]` shows you that 28.8% of the varaince are explained by PC1 and PC2.   
+> > 1. `cumsum(explained_var)[1:2,'exp_var']` shows you that 28.8% of the varaince are explained by PC1 and PC2.   
 > > 2. You need to go up to PC7 to catch 51% of the variance.   
 > > 
 > > ~~~
-> > cumsum(pca_results$explained_var) %>% 
+> > cumsum(explained_var) %>% 
 > >   as.data.frame() %>% 
 > >   filter(exp_var > 50) %>% 
 > >   head(n = 1)
@@ -545,7 +475,7 @@ Let's first see how our _P. syringae_ infection condition is reflected at the PC
 After computing the PCA itself, scores are extracted. 
 	
 ~~~
-scores <- pca_results$scores
+scores <- pca_results$x
 
 # first 5 rows and columns
 scores[1:5,1:5]
@@ -564,41 +494,12 @@ The score matrix contains the samples in rows with their new coordinates on the 
 ~~~
 {: .output}
 
-Before we can create the score plot, we need to add the experimental factors of interest to this dataframe. 
-We are going to do this using the `left_join` function from the `dplyr` package. 
+This is what is used to create PCA plots of the samples. In this case, we will use DESq2's `plotPCA()` function to plot the samples in the first two principal components, colored by 'infected' status. We will pass in the variance stabilized transform object.
 
 ~~~
-scores_with_conditions <- 
-  scores %>% 
-  rownames_to_column("sample") %>% # to prepare to join on the "sample" column
-  left_join(x = .,                 # this means that we are passing the 'scores' dataframe 
-            y = xp_design,         # this dataframe contains the sample to condition correspondence
-            by = "sample")
+plotPCA(vsd, intgroup = 'infected')
 ~~~
 {: .language-r}
-
-We now have a score dataframe that also have a "sample" column as well as the three experimental factors columns: "seed", "infected" and "dpi".
-
-If you show the first 
-
-~~~
-# shows the first 5 rows and the last 4 columns  
-scores_with_conditions[1:5, 48:52]
-~~~
-{: .language-r}  
-
-Now we have the 3 experimental conditions in our score dataframe. 
-~~~
-       PC47         PC48  seed infected dpi
-1 -0.106006 -7.40634e-13 MgCl2     mock   2
-2 -1.450006 -7.40634e-13 MgCl2     mock   2
-3  9.076943 -7.40634e-13 MgCl2     mock   2
-4  3.491862 -7.40634e-13 MgCl2     mock   2
-5  7.905262 -7.40634e-13 MgCl2     mock   7
-~~~
-{: .language-r}
-
-Let's create the plot now using `ggplot2`.
 
 If we do not overlay the "infected" experimental condition on the sample positions, we have a very bare score plot. It only shows the position of the different samples in the new PC coordinate system.
 
@@ -613,30 +514,6 @@ If we do not overlay the "infected" experimental condition on the sample positio
 > {: .solution}
 {: .challenge}
 
-Let's make this plot a little bit more informative. First, the explained variance per PC is pulled out from the `pca_results` R object. This will be used to label the X and Y plot axis.
-~~~
-# explained variance
-# one % variance value per PC
-explained_variance <- 
-  pca_results$explained_var %>% 
-  pull("exp_var")
-~~~
-{: .language-r}
-
-Now it is finally plotting time!
-
-~~~
-ggplot(scores_with_conditions, 
-       aes(PC1, PC2, color = infected)) +
-  geom_point(size = 4) +
-  xlab(paste0("PC1: ",explained_variance[1],"% variance")) +
-  ylab(paste0("PC2: ",explained_variance[2],"% variance")) + 
-  coord_fixed(ratio = 1) +
-  ggtitle("PCA score plot with the infection condition overlaid")
-~~~
-{: .language-r}
-
-<img src="../img/05-infection-score-plot.png" width="800px" alt="infection score plot">
 
 It seems that the infection plays a role in PC1 but the two groups are still overlapping a lot on the left hand side. 
 
@@ -654,6 +531,8 @@ This plot seems to show that PC2 separates the Fr1 seed inoculation from the MgC
 
 > ## Challenge
 > Can you create this plot?
+> > plot(PCA(vsd, intgroup = 'seed'))
+> {: .solution}
 {: .challenge}
 
 ## 3.6 Time after infection score plot
@@ -726,7 +605,7 @@ Several common normalization methods exist to account for these differences:
 | EdgeR's **trimmed mean of M values (TMM)** [[2](https://genomebiology.biomedcentral.com/articles/10.1186/gb-2010-11-3-r25)] | uses a weighted trimmed mean of the log expression ratios between samples | sequencing depth, RNA composition, and gene length | gene count comparisons between and within samples and for **DE analysis** |
 
 ## 4.2 RPKM/FPKM (not recommended for between sample comparisons)
-
+  
 While TPM and RPKM/FPKM normalization methods both account for sequencing depth and gene length, RPKM/FPKM are not recommended. **The reason  is that the normalized count values output by the RPKM/FPKM method are not comparable between samples.** 
 
 Using RPKM/FPKM normalization, the total number of RPKM/FPKM normalized counts for each sample will be different. Therefore, you cannot compare the normalized counts for each gene equally between samples. 
@@ -829,16 +708,11 @@ Let's see how, in practice, we can use `DESeq2` median-of-ratios method to norma
 
 ~~~
 # Data import 
-counts <- read.csv("tutorial/raw_counts.csv", 
-			header = T, 
-			stringsAsFactors = F)
-genes <- counts[,1]
-counts <- counts[,-1]
-row.names(counts) <- genes
+counts <- read_tsv("counts.txt") %>%
+            column_to_rownames(var = 'gene') %>% 
+            as.data.frame()
 
-xp_design <- read.csv("tutorial/samples_to_conditions.csv", 
-			   header = T, 
-			   stringsAsFactors = F)
+xp_design <- read_tsv("experimental_design_modified.txt")
 
 # reorder counts columns according to the experimental design file
 counts <- counts[, xp_design$sample]
@@ -873,11 +747,12 @@ Now that we know the theory of count normalization, we will normalize the counts
 
 We should always make sure that we have sample names that match between the two files, and that the samples are in the right order. DESeq2 will output an error if this is not the case.
 
-```r
+~~~
 ## Check that sample names match in both files
 all(colnames(counts) %in% xp_design$sample)
 all(colnames(counts) == xp_design$sample)
-```
+~~~
+{: .language-r}
 
 If your data did not match, you could use the `match()` function to rearrange them to be matching.
 
@@ -893,8 +768,8 @@ suppressPackageStartupMessages(library(DESeq2)) # to load DESeq2 and suppress th
 
 # Creation of the DESeqDataSet object
 dds <- DESeqDataSetFromMatrix(countData = counts, 
-                              colData = xp_design, 
-                              design = ~ infected) 
+                              colData   = xp_design, 
+                              design    = ~ infected) 
 ~~~
 {: .language-r}
 
@@ -946,7 +821,6 @@ sizeFactors(dds)
 
 We can plot these size factors to see how much they differ between samples. 
 ~~~
-library(tidyverse)
 
 # create a dplyr tibble
 size_factors_df <- tibble(
@@ -955,14 +829,10 @@ size_factors_df <- tibble(
   )
 
 # line plot to connect the different size factor values
-p <- ggplot(size_factors_df, aes(x = sample, y = correction_factor, group = 1)) +
+ggplot(size_factors_df, aes(x = sample, y = correction_factor, group = 1)) +
   geom_point() + 
-  geom_line() +
   theme(axis.text.x = element_text(angle = 90, size = 5)) +
   scale_y_continuous(limits = c(0.5,2))
-
-# to display the plot
-p
 ~~~
 {: .language-r}
 
