@@ -299,7 +299,7 @@ Using  `echo`, you can start off with a "dry run":
 ~~~
 $ for filename in *.fq.gz
   do
-    echo fastqc -o fastqc $filename
+    echo fastqc -o /workspace/fastqc $filename
   done
 ~~~
 {: .bash}
