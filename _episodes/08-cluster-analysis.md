@@ -55,14 +55,16 @@ In the lesson [Differential expression analysis](https://scienceparkstudygroup.g
 ## 2.1 Uploading and selecting the data
 
 ~~~
-counts <- read.delim("counts.txt", header = T, stringsAsFactors = F)
-genes <- counts[,1]
-counts <- counts[,-1]
-row.names(counts) <- genes
+library(tidyverse)
 
-xp_design <- read.delim("experimental_design_modified.txt", header = T, stringsAsFactors = F, colClasses = rep("character",2))
+counts <- read_csv("tutorial/raw_counts.csv") %>%
+            column_to_rownames('Geneid')
+genes <- rownames(counts)
 
-xp_design = xp_design %>% filter(dpi == "7")
+xp_design <- read_csv("tutorial/samples_to_conditions.csv")
+
+xp_design = xp_design %>% 
+              filter(dpi == "7")
 
 counts <- counts[, xp_design$sample]
 

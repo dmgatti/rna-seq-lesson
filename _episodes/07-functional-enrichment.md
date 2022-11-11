@@ -69,7 +69,7 @@ But...now what? :question: :confused:
 
 Why did you do the experiment in the first place? Probably because you had an hypothesis or you were looking to open new leads. 
 
-A functional enrichement analysis will determine whether some functions are enriched in your set of differentially expressed genes. 
+A functional enrichment analysis will determine whether some functions are enriched in your set of differentially expressed genes. 
 
 In this tutorial, we are looking for Arabidopsis leaf genes that are induced or repressed upon inoculation by _Pseudomonas syringae_ DC3000 after 7 days.  
 
@@ -84,11 +84,11 @@ These ORA and GSEA analysis require the use of external resources to assign func
 
 ## 1.2 Over Representation Analysis (ORA)
 
-Over Representation Analysis is searching for biological functions or pathways that are enriched in a list obtained through experimental studies compared to the complete list of functions/pathways.  
+Over Representation Analysis involves searching for biological functions or pathways that are enriched in a list obtained through experimental studies compared to the complete list of functions/pathways.  
 
-Usually, ORA makes use of so-called gene ontologies (abbreviated GO) where each gene receives one or multiple layers of information on their function, cellular localization, etc.
+Usually, ORA makes use of so-called gene ontologies (abbreviated "GO"") where each gene is assigned to one or more categories based on their biological process, function, cellular location, etc.
 
-The ORA analysis rely on this mathematical equation to compute a p-value for a given gene set classified under a certain GO. 
+ORA analysis relies upon the following equation to compute a p-value for a given gene set classified under a certain GO. 
 
 Source: [Wikipedia](https://en.wikipedia.org/wiki/Hypergeometric_distribution)
 
@@ -112,7 +112,7 @@ See this [great chapter](https://yulab-smu.github.io/clusterProfiler-book/chapte
 
 ## 1.3 The Gene Ontology (GO) resource
 
-The __Gene Ontology (GO)__ produces a bird's-eye view of biological systems by building a tree of terms related to biological functions. 
+__Gene Ontology (GO)__ produces a bird's-eye view of biological systems by building a tree of terms related to biological functions. 
 This is particularly helpful when dealing with results from genome-wide experiments (e.g. transcriptomics) since classifying genes into groups of related functions can assist in the interpretation of results. Rather than focusing on each gene, one by one, the researcher gets access to metabolic pathways, functions related to development, etc.
 
 > ## Note
@@ -180,8 +180,20 @@ You can find an [extensive manual available here](http://systemsbiology.cau.edu.
 
 ## 2.1 Read and import differential genes
 
+First, we'll load in the libraries that we will be using.  
+
 ~~~
-diff_genes <- read_delim(file = "differential_genes.tsv", delim = "\t")
+library(tidyverse)
+library(biomartr)
+suppressPackageStartupMessages(library(clusterProfiler))
+library(enrichplot)
+suppressPackageStartupMessages(library(org.At.tair.db))
+library(biomaRt)  # only use to remove cache bug
+~~~
+{: .language-r}
+
+~~~
+diff_genes <- read_csv(file = "tutorial/differential_genes.csv")
 ~~~
 {: .language-r}
 
@@ -202,8 +214,8 @@ nrow(diff_genes)
 **We can perform a Single Enrichment Analysis (SEA) which is essentially similar to an ORA.** AgriGO supports species-specific analyses.   
 For _Arabidopsis thaliana_ [navigate here](http://systemsbiology.cau.edu.cn/agriGOv2/specises_analysis.php?SpeciseID=1&latin=Arabidopsis_thaliana).
 
-First, write gene identifiers to a text file from which you can copy-paste the identifiers. Here, we use the complete list of the 4979 genes
-differentially regulated (DC3000 versus Mock) but you can filter it on some criteria (e.g. fold change). This is what I've done to gather less genes and speed up the SEA analysis.
+First, write gene identifiers to a text file from which you can copy-paste the identifiers. Here, we use the complete list of the 4979 genes differentially regulated (DC3000 versus Mock) but you can filter it on some criteria (e.g. fold change). This is what I've done to gather fewer genes and speed up the SEA analysis.
+
 ~~~
 diff_genes %>% 
   filter(log2FoldChange > 0) %>% 
@@ -212,7 +224,7 @@ diff_genes %>%
 diff_genes %>% 
   filter(log2FoldChange > quantile(log2FoldChange, c(0.75))) %>% # keeping fold changes above the 75th percentile
   dplyr::select(genes) %>% 
-  write.table(., file = "diff_genes_for_agrigo.tsv", row.names = FALSE, quote = FALSE)
+  write.table(., file = "diff_genes_for_agrigo.tsv", row.names = FALSE, col.names = FALSE, quote = FALSE)
 ~~~
 {: .language-r}
 
@@ -236,6 +248,7 @@ If you have a long list, you might write your email address to collect your resu
 This DAG view gives a comprehensive overview of the GO terms and their relationships. 
 
 ## 2.3 Parametric Analysis of Gene Set Enrichment
+
 This analysis takes expression values also into account and could be an richer alternative to SEA. 
 
 ~~~
@@ -265,17 +278,6 @@ We are going to use two fantastic resources: the [Ensembl](https://www.ensembl.o
 
 This step is meant to retrieve the correspondence between organism-specific gene identifiers (e.g. At1g01020) and NCBI Entrez Gene ID (e.g. 839321) which are used by `clusterProfiler`. 
 
-We are going to load the required library first. 
-~~~
-library("biomartr")
-library("clusterProfiler")
-library("tidyverse")
-library("enrichplot")
-suppressPackageStartupMessages(library("org.At.tair.db"))
-library("biomaRt")  # only use to remove cache bug
-~~~
-{: .language-r}
-
 <br>
 
 > ## Important note: troubleshooting
@@ -291,21 +293,19 @@ library("biomaRt")  # only use to remove cache bug
 
 If not done yet, load the table of differential genes. 
 ~~~
-diff_genes <- read_delim(file = "differential_genes.tsv", delim = "\t")
+diff_genes <- read_csv(file = "tutorial/differential_genes.csv")
 ~~~
 {: .language-r}
 
-All what we know about the differential genes are their locus identifier. Not much....
-We are missing functional information which we will add. 
+This file only contains gene identifiers. Next we will add annotation information such as gene locations and functional categories.
 
 ## 3.2 Annotating your DE genes with Ensembl and biomartr
 
 What purpose serves `biomartr`? From the documentation:
-> The first step, however, of any genome based study is to retrieve genomes and their annotation from databases. To automate the retrieval process of this information on a meta-genomic scale, the biomartr package provides interface functions for genomic sequence retrieval and functional annotation retrieval. The major aim of biomartr is to facilitate computational reproducibility and large-scale handling of genomic data for (meta-)genomic analyses. In addition, biomartr aims to address the genome version crisis. With biomartr users can now control and be informed about the genome versions they retrieve automatically. Many large scale genomics studies lack this information and thus, reproducibility and data interpretation become nearly impossible when documentation of genome version information gets neglected.
+> The first step is to retrieve genomes and their annotation from databases. To automate the retrieval process of this information on a meta-genomic scale, the biomartr package provides interface functions for genomic sequence retrieval and functional annotation retrieval. The aim of biomartr is to facilitate computational reproducibility and large-scale handling of genomic data for (meta-)genomic analyses. In addition, biomartr aims to address the genome version crisis. With biomartr users can now control and be informed about the genome versions they retrieve automatically. Many large scale genomics studies lack this information and thus, reproducibility and data interpretation become nearly impossible when documentation of genome version information gets neglected.
 
 What is available for _Arabidopsis thaliana_ in Ensembl?
 ~~~
-# library("biomartr") (if not loaded already)
 biomartr::organismBM(organism = "Arabidopsis thaliana")
 ~~~
 {: .language-r}
@@ -353,12 +353,12 @@ arabido_attributes
 ~~~
 attributes_to_retrieve = c("tair_symbol", "entrezgene_id")
 
-result_BM <- biomartr::biomart( genes      = diff_genes$genes,                  # genes were retrieved using biomartr::getGenome()
-                                mart       = "plants_mart",                     # marts were selected with biomartr::getMarts()
-                                dataset    = "athaliana_eg_gene",               # datasets were selected with biomartr::getDatasets()
-                                attributes = attributes_to_retrieve,            # attributes were selected with biomartr::getAttributes()
-                                filters =   "ensembl_gene_id" )# query key
-head(result_BM)  
+result_BM <- biomartr::biomart( genes      = diff_genes$genes,       # genes were retrieved using biomartr::getGenome()
+                                mart       = "plants_mart",          # marts were selected with biomartr::getMarts()
+                                dataset    = "athaliana_eg_gene",    # datasets were selected with biomartr::getDatasets()
+                                attributes = attributes_to_retrieve, # attributes were selected with biomartr::getAttributes()
+                                filters =   "ensembl_gene_id" )      # query key
+head(result_BM)
 ~~~
 {: .language-r}
 
@@ -391,35 +391,38 @@ To perform the ORA within R, we will use the [clusterProfiler Bioconductor packa
 First, we need to annotate both genes that make up our "universe" and the genes that were identified as differentially expressed.
 ~~~
 # building the universe!
-all_arabidopsis_genes <- read.delim("counts.txt", header = T, stringsAsFactors = F)[,1] # directly selects the gene column
+all_arabidopsis_genes <- read_csv("tutorial/raw_counts.csv") %>%
+                           pull("Geneid")
 
 # we want the correspondence of TAIR/Ensembl symbols with NCBI Entrez gene ids
 attributes_to_retrieve = c("tair_symbol", "uniprotswissprot","entrezgene_id")
 
 # Query the Ensembl API
-all_arabidopsis_genes_annotated <- biomartr::biomart(genes = all_arabidopsis_genes,
+all_arabidopsis_genes_annotated <- biomartr::biomart(genes      = all_arabidopsis_genes,
                                                      mart       = "plants_mart",                 
                                                      dataset    = "athaliana_eg_gene",           
                                                      attributes = attributes_to_retrieve,        
-                                                     filters =  "ensembl_gene_id" )  
+                                                     filters    = "ensembl_gene_id" )  
 
 # for compatibility with enrichGO universe
 # genes in the universe need to be characters and not integers (Entrez gene id)
-all_arabidopsis_genes_annotated$entrezgene_id = as.character(
-  all_arabidopsis_genes_annotated$entrezgene_id) 
+all_arabidopsis_genes_annotated$entrezgene_id = 
+                    as.character(all_arabidopsis_genes_annotated$entrezgene_id) 
 
 ~~~
 {: .language-r}
 
-We now have a correspondence for all our genes found in Arabidopsis. 
+We now have annotation for all our genes found in Arabidopsis. 
+
+Next, we will get the annotation for our differentially expressed genes.
 
 ~~~
-# retrieving NCBI Entrez gene id for our genes called differential
-diff_arabidopsis_genes_annotated <- biomartr::biomart(genes = diff_genes$genes,
+# retrieving NCBI Entrez gene id for our differentially expressed genes.
+diff_arabidopsis_genes_annotated <- biomartr::biomart(genes     = diff_genes$genes,
                                                      mart       = "plants_mart",                 
                                                      dataset    = "athaliana_eg_gene",           
                                                      attributes = attributes_to_retrieve,        
-                                                     filters =  "ensembl_gene_id" )  
+                                                     filters    = "ensembl_gene_id" )  
 ~~~
 {: .language-r}
 
@@ -427,15 +430,15 @@ This gave us the second part which is the classification of genes "drawn" from t
 
 ~~~
 # performing the ORA for Gene Ontology Biological Process class
-ora_analysis_bp <- enrichGO(gene = diff_arabidopsis_genes_annotated$entrezgene_id, 
+ora_analysis_bp <- enrichGO(gene     = diff_arabidopsis_genes_annotated$entrezgene_id, 
                             universe = all_arabidopsis_genes_annotated$entrezgene_id, 
-                            OrgDb = org.At.tair.db,  # contains the TAIR/Ensembl id to GO correspondence for A. thaliana
-                            keyType = "ENTREZID",
-                            ont = "BP",              # either "BP", "CC" or "MF",
+                            OrgDb    = org.At.tair.db,  # contains the TAIR/Ensembl id to GO correspondence for A. thaliana
+                            keyType  = "ENTREZID",
+                            ont      = "BP",              # either "BP", "CC" or "MF",
                             pAdjustMethod = "BH",
-                            qvalueCutoff = 0.05,
-                            readable = TRUE, 
-                            pool = FALSE)
+                            qvalueCutoff  = 0.05,
+                            readable      = TRUE, 
+                            pool          = FALSE)
 ~~~
 {: .language-r}
 
@@ -480,7 +483,8 @@ GO:0072657       BP GO:0072657    protein localization to membrane  200/3829 377
 
 Nice to have all this textual information but an image is worth a thousand words so let's create some visual representations. 
 
-A dotplot can be created very easily. 
+You may want to display the most significantly enriched categories, along with their significance levels. `clusterPrifiler` contains a 'dotplot' function. Note that this is not the same as a dotplot that compares two genomic sequences.
+
 ~~~
 dotplot(ora_analysis_bp_simplified)
 ~~~
@@ -797,12 +801,12 @@ Perform the analysis using the hypergeometric test with the Yekutieli FDR correc
 First things first, load the required libraries if not done yet. 
 
 ~~~
-library("biomartr")
-library("clusterProfiler")
-library("tidyverse")
-library("enrichplot")
-suppressPackageStartupMessages(library("org.At.tair.db"))
-library("biomaRt")  # only use to remove cache bug
+library(biomartr)
+library(clusterProfiler)
+library(tidyverse)
+library(enrichplot)
+suppressPackageStartupMessages(library(org.At.tair.db))
+library(biomaRt)  # only use to remove cache bug
 ~~~
 {: .language-r}
 
@@ -869,9 +873,9 @@ Similarly, we can plot this ORA result as a dotplot.
 ~~~
 # create a simple dotplot graph
 dotplot(ora_analysis_kegg_modules, 
-    color = "qvalue", 
+    color        = "qvalue", 
     showCategory = 10, 
-    size = "Count")
+    size         = "Count")
 ~~~
 {: .language-r}
 

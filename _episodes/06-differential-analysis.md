@@ -65,6 +65,7 @@ Since we do not want to work on all comparisons, we will filter out the samples 
 ~~~
 # Import libraries
 library(DESeq2)
+library(EnhancedVolcano)
 library(tidyverse)
 library(apeglm)
 library(pheatmap)
@@ -72,11 +73,11 @@ library(pheatmap)
 # BiocManager::install('apeglm')
 
 # import the samples to conditions correspodence
-xp_design <- read_tsv("experimental_design_modified.txt")
+xp_design <- read_csv("tutorial/samples_to_conditions.csv")
 
 # filter design file to keep only "mock" and the "infected P. syringae at 7 dpi" conditions.
 xp_design_mock_vs_infected <- xp_design %>% 
-                                filter(seed == "MgCl2" & dpi == "7")
+                                filter(growth == "MgCl2" & dpi == "7")
 ~~~
 {: .language-r}
 
@@ -85,8 +86,8 @@ The gene names have to be changed to the names of the rows of the table for comp
 
 ~~~
 # Import the gene raw counts
-raw_counts <- read_tsv("counts.txt") %>% 
-                column_to_rownames("gene")
+raw_counts <- read_csv("tutorial/raw_counts.csv") %>% 
+                column_to_rownames("Geneid")
 
 # reorder counts columns according to the complete list of samples 
 raw_counts <- raw_counts[ , xp_design$sample]
@@ -106,7 +107,6 @@ raw_counts_filtered = raw_counts[, colnames(raw_counts) %in% xp_design_mock_vs_i
 dds <- DESeqDataSetFromMatrix(countData = raw_counts_filtered, 
                               colData   = xp_design_mock_vs_infected, 
                               design    = ~ infected)
-
 ~~~
 {: .language-r}
 
@@ -408,9 +408,6 @@ resultsNames(dds)
 
 We can build the Volcano plot rapidly without much customization. 
 ~~~
-# load the library if not done yet
-library("EnhancedVolcano")
-
 # The main function is named after the package
 EnhancedVolcano(toptable = resLFC,      # Use the shrunken log2 fold change to remove noise associated with low count genes.
                 x        = "log2FoldChange",   # Name of the column in resLFC that contains the log2 fold changes
@@ -424,16 +421,15 @@ EnhancedVolcano(toptable = resLFC,      # Use the shrunken log2 fold change to r
 Alternatively, the plot can be heavily customized to become a publication-grade figure.  
 ~~~
 EnhancedVolcano(toptable = resLFC,
-                x = "log2FoldChange",
-                y = "padj",
-                lab = rownames(resLFC),
-                xlim = c(-10, +10),
-                ylim = c(0,100),
-                pCutoff = 1e-06,
-                transcriptPointSize = 2.0,
+                x        = "log2FoldChange",
+                y        = "padj",
+                lab      = rownames(resLFC),
+                xlim     = c(-10, +10),
+                ylim     = c(0,100),
+                pCutoff  = 1e-06,,
                 FCcutoff = 2, 
                 title = "Pseudomonas syringae DC3000 versus mock \n (fold change cutoff = 2, p-value cutoff = 1e-06)",
-                legend=c(
+                legendLabels = c(
                   'Not significant',
                   'Log2 fold-change (but do not pass p-value cutoff)',
                   'Pass p-value cutoff',
@@ -449,8 +445,8 @@ One can also cluster samples and genes to identify groups of genes that show a c
 
 We are going to make use of a library called `pheatmap`. Here is a minimal example (`mtcars` is a dataset that comes included with R).
 ~~~
-  df <- scale(mtcars)
-  pheatmap(df)
+df <- scale(mtcars)
+pheatmap(df)
 ~~~
 {: .language-r}
 

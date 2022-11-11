@@ -293,10 +293,10 @@ First, we need to import the **raw gene counts**, the **sample to condition corr
 ## 3.1 Data import
 
 ~~~
-raw_counts <- read_tsv("counts.txt") %>% 
-                column_to_rownames("gene")
+raw_counts <- read_csv("tutorial/raw_counts.csv") %>% 
+                column_to_rownames("Geneid")
 
-xp_design <- read_tsv("experimental_design_modified.txt")
+xp_design <- read_csv("tutorial/samples_to_conditions.csv")
 
 # reorder counts columns according to the experimental design file
 raw_counts <- raw_counts[, xp_design$sample]
@@ -306,7 +306,7 @@ raw_counts[1:5, 1:5]
 ~~~
 {: .language-r}
 
-This is how our dataframe looks like:
+This is how our data frame looks like:
 
 ~~~
           ERR1406259 ERR1406260 ERR1406261 ERR1406262 ERR1406263
@@ -334,7 +334,7 @@ If all is well, then create the `dds` object.
 ## Creation of the DESeqDataSet object
 dds <- DESeqDataSetFromMatrix(countData = raw_counts, 
                               colData   = xp_design, 
-                              design    = ~ seed + infected + dpi)
+                              design    = ~ growth + infected + dpi)
 ~~~
 {: .language-r}
 
@@ -401,7 +401,7 @@ variance_stabilised_counts %>%
     geom_point(alpha = 0.5, fill = "grey", colour = "black") +
     labs(x = "Gene count average (variance stabilised)", 
          y = "Gene count standard deviation (variance stabilised)") +
-    ggtitle("Mean - Standard Deviation Relationship\n(after variance stabilisation0")
+    ggtitle("Mean - Standard Deviation Relationship\n(after variance stabilisation")
 ~~~
 {: .language-r}
 
@@ -503,16 +503,7 @@ plotPCA(vsd, intgroup = 'infected')
 
 If we do not overlay the "infected" experimental condition on the sample positions, we have a very bare score plot. It only shows the position of the different samples in the new PC coordinate system.
 
-<img src="../img/05-bare-score-plot.png" width="600px" alt="bare PCA score plot">
-
-> ## Question
-> Do you find this score plot informative? If yes why? If not why?
->
-> > ## Solution
-> > This score plot does not show how the sample scores related to the different experimental conditions of interest. 
-> > One need to add the experimental condition of interest as a new layer (color, shape). 
-> {: .solution}
-{: .challenge}
+<img src="../img/05-infected-score-plot.png" width="600px" alt="bare PCA score plot">
 
 
 It seems that the infection plays a role in PC1 but the two groups are still overlapping a lot on the left hand side. 
@@ -521,23 +512,27 @@ It seems that the infection plays a role in PC1 but the two groups are still ove
 
 Perhaps another experimental condition would better explain the sample distribution.
 
-Have a look at this new PCA plot with the _seed_ condition superimposed.  
+Have a look at this new PCA plot with the _growth_ condition superimposed.  
 
-<img src="../img/05-seed-score-plot.png" width="800px" alt="PCA with seed inoculation conditions overlaied" >
+~~~
+plotPCA(vsd, intgroup = 'growth')
+~~~
+{: .language-r}
+
+<img src="../img/05-growth-score-plot.png" width="800px" alt="PCA with growth inoculation conditions overlaid" >
 
 You can see that the sample positions have not changed on the plot. But the colors have since we wanted to color samples by their seed inoculation level ("MgCl2", "Fr1" or "PA1").
 
-This plot seems to show that PC2 separates the Fr1 seed inoculation from the MgCl2 or PA1 seed treatment. 
-
-> ## Challenge
-> Can you create this plot?
-> > plot(PCA(vsd, intgroup = 'seed'))
-> {: .solution}
-{: .challenge}
+This plot seems to show that PC2 separates the Fr1 seed inoculation from the MgCl2 or PA1 seed treatment.  
 
 ## 3.6 Time after infection score plot
 
 Last but not least, the time after _Pseudomonas syringae_ DC3000 infection can be overlaid too.
+
+~~~
+plotPCA(vsd, intgroup = 'dpi')
+~~~
+{: .language-r}
 
 <img src="../img/05-dpi-score-plot.png" width="800px" alt="PCA with dpi overlaid">
 
@@ -708,11 +703,11 @@ Let's see how, in practice, we can use `DESeq2` median-of-ratios method to norma
 
 ~~~
 # Data import 
-counts <- read_tsv("counts.txt") %>%
-            column_to_rownames(var = 'gene') %>% 
+counts <- read_csv("tutorial/raw_counts.csv") %>%
+            column_to_rownames(var = 'Geneid') %>% 
             as.data.frame()
 
-xp_design <- read_tsv("experimental_design_modified.txt")
+xp_design <- read_csv("tutorial/samples_to_conditions.csv")
 
 # reorder counts columns according to the experimental design file
 counts <- counts[, xp_design$sample]
