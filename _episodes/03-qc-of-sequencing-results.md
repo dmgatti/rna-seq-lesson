@@ -159,12 +159,14 @@ $ docker start -ai fastqc
 
 ## 2.4 A first peek at our FASTQ files
 
-Several sequencing files are available in the `/workspace/data/fastq/` folder as it contains 4 fastq files. The files are generaly quite big (they usualy contain up to 40 milion reads), so it's a smart thing to keep them zipped as they are.  
+At this point, you should be **outside** of any Docker containers.
+
+Several sequencing files are available in the `/rnaseq/data/fastq/` folder as it contains 4 fastq files. The files are generaly quite big (they usualy contain up to 40 milion reads), so it's a smart thing to keep them zipped as they are.  
 
 Let's move to the directory that contains the sequencing files (.fastq.gz) and other needed files e.g. genome reference sequence.  
 
 ~~~
-cd /workspace/data/fastq/
+cd /rnaseq/data/fastq/
 ls
 ~~~
 {: .bash}
