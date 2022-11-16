@@ -403,6 +403,11 @@ GCP machine to your local computer with the help of `scp`.
 First we need to exit the container and next we can transfer our HTML 
 files to our local computer.
 
+~~~
+$ exit
+~~~
+{: .bash}
+
 On your local computer, open a new Shell and type:
 ~~~
 $ mkdir  ~/Desktop/fastqc
@@ -802,7 +807,6 @@ $ java -jar /usr/share/java/trimmomatic.jar \
    MINLEN:25
 ~~~
 {: .bash}
-
 
 Of course, we don't want to do this for all the reads seperately so lets create a loop through all the fastq files.
 
