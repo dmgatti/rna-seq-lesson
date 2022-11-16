@@ -11,8 +11,8 @@ title: "Instructor Notes"
 	- [2.3 Pull the Docker image](#23-pull-the-docker-image)
 	- [2.4 Create and run a container interactively](#24-create-and-run-a-container-interactively)
 	- [2.6 Create, run a container interactively and bind a local folder](#26-create-run-a-container-interactively-and-bind-a-local-folder)
+	- [2.7 Troubleshooting Docker](#4-troubleshooting-docker)
 - [3. Singularity setup](#3-singularity-setup)
-
 <!-- /MarkdownTOC -->
 
 
@@ -158,6 +158,46 @@ docker run -v $PWD:/workspace/ --name fastq -it scienceparkstudygroup/master-gls
 ~~~
 {: .language-bash}
 
+## 2.7 Troubleshooting Docker
+
+- [Episode 03 ("From fastq files to alignments")](../03-qc-of-sequencing-results/index.html)
+
+If you are denied permission to the workspace directory you will see
+
+~~~
+bash: cd: /workspace: Permission denied
+~~~
+{: .output}
+
+You need to exit the container and then remove it if this happens.
+~~~
+exit
+docker ps -a
+~~~
+{: .bash}
+
+~~~
+CONTAINER ID   IMAGE                                        COMMAND       CREATED         STATUS                     PORTS     NAMES
+31099c0686be   trimmomatic                                  "/bin/bash"   8 minutes ago   Exited (1) 6 seconds ago             trimmomatic
+b9edd81a567a   fastqc                                       "/bin/bash"   3 hours ago     Exited (1) 8 minutes ago             fastqc
+21b3d8c2cc67   mgalland/docker-for-teaching:rnaseq-latest   "/init"       8 days ago      Exited (0) 8 days ago                machine01
+~~~
+{: .bash}
+
+Copy the container id from the first column and paste it into the following command.
+
+~~~
+docker rm CONTAINERID
+~~~
+{: .bash}
+
+Then, make sure you are in the `rnaseq` directory before creating a new trimmomatic container.
+
+~~~
+cd /rnaseq/
+docker run -v $PWD:/workspace/ --name trimmomatic -it trimmomatic
+~~~
+{: .bash}
 
 
 # 3. Singularity setup
