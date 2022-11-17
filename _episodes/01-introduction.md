@@ -1,6 +1,6 @@
 ---
 title: "01 Introduction"
-teaching: 30
+teaching: 10
 exercises: 0
 questions:
 - "What can I learn by doing this RNA-Seq lesson?"
