@@ -1,6 +1,6 @@
 ---
 title: "03 From fastq files to alignments"
-teaching: 45
+teaching: 150
 exercises: 0 
 questions:
 - "How do I perform a quality check of my RNA-seq fastq files with `FastQC`?"
