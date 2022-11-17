@@ -1,7 +1,7 @@
 ---
 title: "02 Statistics & Experimental design"
-teaching: 90
-exercises: 30
+teaching: 100
+exercises: 45
 questions:
 - "What are the key statistical concepts I need to know for experimental design?"
 - "What are type I and type II errors?"
