@@ -92,6 +92,16 @@ $ cd /rnaseq
 ~~~
 {: .bash}
 
+> ## More about Docker containers
+>
+> If you are new to software containers, you might want to review this lesson on 
+> [Reproducible Computational Environments Using Containers: Introduction to Docker](https://carpentries-incubator.github.io/docker-introduction/).
+> You can also visit [DockerHub](https://hub.docker.com/) to find other Docker containers.
+> To use Docker containers on the JAX computing cluster (Sumner), see this myJAX page to 
+> [Use Docker Containers with Singularity](https://jacksonlaboratory.sharepoint.com/sites/ResearchIT/SitePages/Use-Docker-Containers-with-Singularity.aspx).
+>
+{: .callout}
+
 ## 2.3 Getting familiar with the Docker container
 
 Now we will start the Docker container that we will call `fastqc` and that contains all tutorial softwares and datasets. 
