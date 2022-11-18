@@ -108,6 +108,19 @@ Sometimes, you'll only want to look at one section of the video:
 - [Calculating the percent variation explained by each PC](https://youtu.be/FgakZw6K1QQ?t=903)
 - [Worked 3D example](https://youtu.be/FgakZw6K1QQ?t=990)
 
+## 2.2 Visualize PCA (animation)
+The animation below illustrates how principal components are calculated from
+data. You can imagine that the black line is a rod and each red dashed line is
+a spring. The energy of each spring is proportional to its squared length. The
+direction of the first principal component is the one that minimises the total
+energy of all of the springs. In the animation below, the springs pull the rod,
+finding the direction of the first principal component when they reach
+equilibrium. We then use the length of the springs from the rod as the first
+principal component.
+This is explained in more detail on [this Q&A website](https://stats.stackexchange.com/questions/2691/making-sense-of-principal-component-analysis-eigenvectors-eigenvalues).
+
+<img src="../fig/pendulum.gif" alt="pendulum" />
+
 ## 2.2 Worked PCA example
 
 In (bio)chemical analysis the data matrices can be very large. An infrared spectrum (800 wavelengths) for 50 samples for example would give a data matrix of size 40,000 (50x800) numbers.  A genomic data (e.g. 20,000 genes) for 100 patients would lead to a huge data matrix of (100x20,000) = 2,000,000 numbers. 

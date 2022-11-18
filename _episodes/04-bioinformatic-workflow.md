@@ -1,7 +1,7 @@
 ---
 title: "04 Visualizing and counting of the alignments"
-teaching: 45
-exercises: 15
+teaching: 60
+exercises: 30
 questions:
 - "What is a BAM file?"
 - "What do all these numbers mean?"

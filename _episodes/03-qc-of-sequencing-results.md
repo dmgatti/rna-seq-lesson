@@ -1,6 +1,6 @@
 ---
 title: "03 From fastq files to alignments"
-teaching: 45
+teaching: 150
 exercises: 0 
 questions:
 - "How do I perform a quality check of my RNA-seq fastq files with `FastQC`?"
@@ -91,6 +91,16 @@ You should be outside of the Docker container for now. Change into the `/rnaseq`
 $ cd /rnaseq
 ~~~
 {: .bash}
+
+> ## More about Docker containers
+>
+> If you are new to software containers, you might want to review this lesson on 
+> [Reproducible Computational Environments Using Containers: Introduction to Docker](https://carpentries-incubator.github.io/docker-introduction/).
+> You can also visit [DockerHub](https://hub.docker.com/) to find other Docker containers.
+> To use Docker containers on the JAX computing cluster (Sumner), see this myJAX page to 
+> [Use Docker Containers with Singularity](https://jacksonlaboratory.sharepoint.com/sites/ResearchIT/SitePages/Use-Docker-Containers-with-Singularity.aspx).
+>
+{: .callout}
 
 ## 2.3 Getting familiar with the Docker container
 
